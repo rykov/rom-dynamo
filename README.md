@@ -32,14 +32,14 @@ ROM-Dynamo uses [aws-sdk-core][aws] library, so you will need to initialize that
       region:        'us-east-1'
     })
 
-To connect, use the following URL to specify the AWS region and table name prefix.  In this case, accessing `users` will map to the table `table-name-prefix-users`:
+To connect, use the following URL to specify the AWS region and table name prefix.  In this case, accessing `photos` will map to the table `table-name-prefix-photos`:
 
     dynamo://region/table-name-prefix-/
 
 So a sample setup will be:
 
     rom = ROM.setup(:dynamo, 'dynamo://us-east-1/development_app_/') do
-      relation(:users) do        
+      relation(:photos) do
         # This will call GetItem API directly
         def by_id(id)
           restrict(id: id)
@@ -51,8 +51,8 @@ So a sample setup will be:
         end
       end
 
-      commands(:users) do
-        define(:create) { result(:one)  }
+      commands(:photos) do
+        define(:create) { result(:one) }
         define(:delete) { result(:one) }
       end
     end
@@ -65,7 +65,7 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-1. Fork it ( https://github.com/[my-github-username]/rom-dynamo/fork )
+1. Fork it ( https://github.com/rykov/rom-dynamo/fork )
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
