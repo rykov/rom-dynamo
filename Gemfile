@@ -5,5 +5,5 @@ gemspec
 
 # For development/testing
 gem 'dotenv'
-gem 'rom', :github => 'rom-rb/rom'
+gem 'rom'
 gem 'virtus'
