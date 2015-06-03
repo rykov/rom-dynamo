@@ -3,16 +3,6 @@ module Rom
     class Relation < ROM::Relation
       include Enumerable
       forward :restrict, :index_restrict
-
-      def insert(*args)
-        dataset.insert(*args)
-        self
-      end
-
-      def delete(*args)
-        dataset.delete(*args)
-        self
-      end
     end
 
     class Dataset
@@ -48,17 +38,27 @@ module Rom
 
       ############# WRITE #############
       def insert(hash)
-        connection.put_item({
-          table_name: name,
-          item: hash
-        })
+        opts = { table_name: name, item: stringify_keys(hash) }
+        connection.put_item(opts)
       end
 
       def delete(hash)
+        hash = stringify_keys(hash)
         connection.delete_item({
           table_name: name,
           key: hash_to_key(hash),
           expected: to_expected(hash),
+        })
+      end
+
+      def update(hash)
+        hash = stringify_keys(hash)
+        keys = hash_to_key(hash)
+        connection.update_item({
+          table_name: name, key: keys,
+          attribute_updates: hash.each_with_object({}) do |(k, v), out|
+            out[k] = { value: dump_value(v), action: 'PUT' } if !keys[k]
+          end
         })
       end
 
@@ -109,6 +109,15 @@ module Rom
           vars.each { |k| out.instance_variable_set(k, instance_variable_get(k)) }
           opts.each { |k, v| out.instance_variable_set("@#{k}", v) }
         end
+      end
+
+      # String modifiers
+      def stringify_keys(hash)
+        hash.each_with_object({}) { |(k, v), out| out[k.to_s] = v }
+      end
+
+      def dump_value(v)
+        v.is_a?(Time) ? v.utc.iso8601(6) : v
       end
     end
 

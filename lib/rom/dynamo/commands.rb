@@ -8,8 +8,26 @@ module Rom
         def execute(tuple)
           attributes = input[tuple]
           validator.call(attributes)
-          relation.insert(attributes.to_h)
+          dataset.insert(attributes.to_h)
           []
+        end
+
+        def dataset
+          relation.dataset
+        end
+      end
+
+      # DynamoDB update command
+      class Update < ROM::Commands::Update
+        def execute(tuple)
+          attributes = input[tuple]
+          validator.call(attributes)
+          dataset.update(attributes.to_h)
+          []
+        end
+
+        def dataset
+          relation.dataset
         end
       end
 
@@ -17,8 +35,12 @@ module Rom
       class Delete < ROM::Commands::Delete
         def execute
           target.to_a.tap do |tuples|
-            tuples.each { |t| relation.delete(t) }
+            tuples.each { |t| dataset.delete(t) }
           end
+        end
+
+        def dataset
+          relation.dataset
         end
       end
     end
