@@ -1,4 +1,5 @@
 require 'rom'
+require 'date'
 require 'aws-sdk-core'
 require "rom/dynamo/version"
 require 'rom/dynamo/relation'

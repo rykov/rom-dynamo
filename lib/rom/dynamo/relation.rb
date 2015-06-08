@@ -115,6 +115,7 @@ module Rom
       end
 
       def dump_value(v)
+        return v.new_offset(0).iso8601(6) if v.is_a?(DateTime)
         v.is_a?(Time) ? v.utc.iso8601(6) : v
       end
     end
