@@ -19,11 +19,12 @@ module Rom
 
       # DynamoDB update command
       class Update < ROM::Commands::Update
-        def execute(tuple)
-          attributes = input[tuple]
+        def execute(params)
+          attributes = input[params]
           validator.call(attributes)
-          dataset.update(attributes.to_h)
-          []
+          relation.map do |tuple|
+            dataset.update(tuple, attributes.to_h)
+          end
         end
 
         def dataset

@@ -51,11 +51,9 @@ module Rom
         })
       end
 
-      def update(hash)
-        hash = stringify_keys(hash)
-        keys = hash_to_key(hash)
+      def update(keys, hash)
         connection.update_item({
-          table_name: name, key: keys,
+          table_name: name, key: hash_to_key(stringify_keys(keys)),
           attribute_updates: hash.each_with_object({}) do |(k, v), out|
             out[k] = { value: dump_value(v), action: 'PUT' } if !keys[k]
           end
