@@ -94,9 +94,8 @@ module Rom
 
       def table_keys
         @table_keys ||= begin
-          resp = ddb.describe_table(table_name: name)
-          keys = resp.first[:table][:key_schema]
-          keys.map(&:attribute_name)
+          r = ddb.describe_table(table_name: name)
+          r[:table][:key_schema].map(&:attribute_name)
         end
       end
 

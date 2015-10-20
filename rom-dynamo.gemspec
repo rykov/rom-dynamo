@@ -24,8 +24,8 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   # Runtime
-  spec.add_runtime_dependency "rom", "~> 0.7"
-  spec.add_runtime_dependency "aws-sdk-core"
+  spec.add_runtime_dependency "aws-sdk-core", "~> 2.1"
+  spec.add_runtime_dependency "rom", "~> 0.7.0"
 
   # Development
   spec.add_development_dependency "activesupport", "~> 4.2.0"
