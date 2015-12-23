@@ -35,7 +35,7 @@ module Rom
       # DynamoDB delete command
       class Delete < ROM::Commands::Delete
         def execute
-          target.to_a.tap do |tuples|
+          relation.to_a.tap do |tuples|
             tuples.each { |t| dataset.delete(t) }
           end
         end

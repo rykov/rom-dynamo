@@ -3,9 +3,11 @@ module Rom
     class Relation < ROM::Relation
       include Enumerable
       forward :restrict, :index_restrict
+      adapter :dynamo
     end
 
     class Dataset
+      include Enumerable
       include Equalizer.new(:name, :connection)
       attr_reader :name, :connection
       alias_method :ddb, :connection
@@ -16,10 +18,11 @@ module Rom
       end
 
       ############# READ #############
+
       def each(&block)
-        each_item({
+        block.nil? ? to_enum : each_item({
+          key_conditions: @conditions,
           consistent_read: true,
-          key_conditions: @conditions
         }, &block)
       end
 

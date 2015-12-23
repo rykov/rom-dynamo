@@ -7,3 +7,4 @@ gemspec
 gem 'dotenv'
 gem 'rom'
 gem 'virtus'
+gem 'rspec'
