@@ -8,7 +8,7 @@ module Rom
 
     class Dataset
       include Enumerable
-      include Equalizer.new(:name, :connection)
+      include Dry::Equalizer(:name, :connection)
       attr_reader :name, :connection
       alias_method :ddb, :connection
 

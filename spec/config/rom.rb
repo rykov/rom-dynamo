@@ -1,3 +1,2 @@
 # encoding: utf-8
-
-ROM.use :auto_registration
+# ROM.setup placeholder
