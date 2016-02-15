@@ -2,7 +2,7 @@ module Rom
   module Dynamo
     class Relation < ROM::Relation
       include Enumerable
-      forward :restrict, :index_restrict
+      forward :restrict, :batch_restrict, :index_restrict
       adapter :dynamo
     end
 
@@ -31,6 +31,12 @@ module Rom
         conds = query_to_conditions(query)
         conds = @conditions.merge(conds)
         dup_as(Dataset, conditions: conds)
+      end
+
+      def batch_restrict(keys)
+        dup_as(BatchGetDataset, keys: keys.map do |k|
+          Hash[table_keys.zip(k.is_a?(Array) ? k : [k])]
+        end)
       end
 
       def index_restrict(index, query)
@@ -122,29 +128,36 @@ module Rom
       end
     end
 
-    # Dataset queried via a Global Index
-    class GlobalIndexDataset < Dataset
-      attr_accessor :index
+    # Batch get using an array of key queries
+    # [{ key => val }, { key => val }, ...]
+    class BatchGetDataset < Dataset
+      attr_accessor :keys
 
+      # Query for records
       def each(&block)
-        # Pull record IDs from Global Index
-        keys = []; each_item({
-          key_conditions: @conditions,
-          index_name: @index
-        }) { |hash| keys << hash_to_key(hash) }
-
-        # Bail if we have nothing
-        return if keys.empty?
-
-        # Query for the actual records
-        ddb.batch_get_item({
-          request_items: { name => { keys: keys } },
+        !@keys.empty? && ddb.batch_get_item({
+          request_items: { name => { keys: @keys } },
         }).each_page do |page|
           out = page[:responses][name]
           out.each(&block)
         end
       end
+    end
 
+    # Dataset queried via a Global Index
+    class GlobalIndexDataset < BatchGetDataset
+      attr_accessor :index
+
+      def each(&block)
+        # Pull key hashes from Global Index
+        @keys = []; each_item({
+          key_conditions: @conditions,
+          index_name: @index
+        }) { |hash| @keys << hash_to_key(hash) }
+
+        # Use BatchGetDataset to get records
+        super(&block)
+      end
     end
   end
 end
