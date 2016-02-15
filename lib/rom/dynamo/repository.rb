@@ -38,7 +38,7 @@ module Rom
     private
       def _has?(name)
         @ddb.describe_table(table_name: name)
-      rescue Aws::ResourceNotFoundException
+      rescue Aws::DynamoDB::Errors::ResourceNotFoundException
         return false
       end
     end
