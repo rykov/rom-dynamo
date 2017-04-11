@@ -7,7 +7,6 @@ module Rom
       class Create < ROM::Commands::Create
         def execute(tuple)
           attributes = input[tuple]
-          validator.call(attributes)
           dataset.insert(attributes.to_h)
           []
         end
@@ -21,7 +20,6 @@ module Rom
       class Update < ROM::Commands::Update
         def execute(params)
           attributes = input[params]
-          validator.call(attributes)
           relation.map do |tuple|
             dataset.update(tuple, attributes.to_h)
           end
