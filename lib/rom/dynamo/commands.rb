@@ -5,10 +5,11 @@ module Rom
     module Commands
       # DynamoDB create command
       class Create < ROM::Commands::Create
-        def execute(tuple)
-          attributes = input[tuple]
-          dataset.insert(attributes.to_h)
-          []
+        def execute(tuples)
+          Array([tuples]).flatten.map do |tuple|
+            attributes = input[tuple]
+            dataset.insert(attributes.to_h)
+          end
         end
 
         def dataset

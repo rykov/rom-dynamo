@@ -48,7 +48,7 @@ module Rom
       ############# WRITE #############
       def insert(hash)
         opts = { table_name: name, item: stringify_keys(hash) }
-        connection.put_item(opts)
+        connection.put_item(opts).attributes
       end
 
       def delete(hash)
@@ -57,7 +57,7 @@ module Rom
           table_name: name,
           key: hash_to_key(hash),
           expected: to_expected(hash),
-        })
+        }).attributes
       end
 
       def update(keys, hash)
@@ -66,7 +66,7 @@ module Rom
           attribute_updates: hash.each_with_object({}) do |(k, v), out|
             out[k] = { value: dump_value(v), action: 'PUT' } if !keys[k]
           end
-        })
+        }).attributes
       end
 
       ############# HELPERS #############
