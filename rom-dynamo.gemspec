@@ -24,9 +24,9 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   # Runtime
-  spec.add_runtime_dependency "aws-sdk-core", "~> 2.0"
   spec.add_runtime_dependency "addressable", "~> 2.3"
   spec.add_runtime_dependency "rom", ">= 1.0", "< 4.0"
+  spec.add_runtime_dependency "aws-sdk-dynamodb", "~> 1.0"
 
   # Development
   spec.add_development_dependency "activesupport", ">= 4.0", "< 6.0"
