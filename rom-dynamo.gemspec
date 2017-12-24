@@ -25,7 +25,7 @@ Gem::Specification.new do |spec|
 
   # Runtime
   spec.add_runtime_dependency "addressable", "~> 2.3"
-  spec.add_runtime_dependency "rom", ">= 1.0", "< 4.1"
+  spec.add_runtime_dependency "rom", ">= 1.0", "< 5.0"
   spec.add_runtime_dependency "aws-sdk-dynamodb", "~> 1.0"
 
   # Development
