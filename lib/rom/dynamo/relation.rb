@@ -148,15 +148,19 @@ module Rom
     class GlobalIndexDataset < BatchGetDataset
       attr_accessor :index
 
+      # Paginate through key hashes from Global Index
+      # And call BatchGetItem for keys from each page
       def each(&block)
-        # Pull key hashes from Global Index
-        @keys = []; each_item({
-          key_conditions: @conditions,
-          index_name: @index
-        }) { |hash| @keys << hash_to_key(hash) }
+        index_query.each_page do |page|
+          @keys = page[:items].map { |h| hash_to_key(h) }
+          super(&block)
+        end
+      end
 
-        # Use BatchGetDataset to get records
-        super(&block)
+      private def index_query
+        opts = { key_conditions: @conditions, limit: 100 }
+        opts.merge!(table_name: name, index_name: @index)
+        connection.query(opts)
       end
     end
   end
