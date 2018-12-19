@@ -3,6 +3,7 @@ module Rom
     class Relation < ROM::Relation
       include Enumerable
       forward :restrict, :batch_restrict, :index_restrict
+      forward :limit, :reversed
       adapter :dynamo
     end
 
@@ -22,9 +23,8 @@ module Rom
 
       def each(&block)
         block.nil? ? to_enum : begin
-          query_each_page(consistent_read: true) do |page|
-            page[:items].each(&block)
-          end
+          result = start_query(consistent_read: true)
+          result.each_page { |p| p[:items].each(&block) }
         end
       end
 
@@ -40,8 +40,17 @@ module Rom
       end
 
       def index_restrict(index, query)
-        opts = { index_name: index.to_s, limit: @query[:limit] || 100 }
-        dup_with_query(GlobalIndexDataset, query, opts)
+        dup_with_query(GlobalIndexDataset, query, index_name: index.to_s)
+      end
+
+      ############# PAGINATION #############
+
+      def limit(limit)
+        dup_with_query(self.class, nil, limit: limit.to_i)
+      end
+
+      def reversed
+        dup_with_query(self.class, nil, scan_index_forward: false)
       end
 
       ############# WRITE #############
@@ -79,20 +88,22 @@ module Rom
         end
       end
 
-      def dup_with_query(klass, query, opts = {})
-        conditions = @query[:key_conditions]
-        conditions = conditions.merge(query_to_conditions(query)).freeze
-        opts = @query.merge(opts).merge!(key_conditions: conditions)
-        dup_as(klass, query: opts.freeze)
-      end
+      def dup_with_query(klass, key_hash, opts = {})
+        opts = @query.merge(opts)
 
-      def query_to_conditions(query)
-        Hash[query.map do |key, value|
-          [key, {
-            attribute_value_list: [value],
-            comparison_operator:  "EQ"
-          }]
-        end]
+        if key_hash && !key_hash.empty?
+          conditions = @query[:key_conditions]
+          opts[:key_conditions] = conditions.merge(Hash[
+            key_hash.map do |key, value|
+              [key, {
+                attribute_value_list: [value],
+                comparison_operator:  "EQ"
+              }]
+            end
+          ]).freeze
+        end
+
+        dup_as(klass, query: opts.freeze)
       end
 
       def to_expected(hash)
@@ -114,10 +125,10 @@ module Rom
         end
       end
 
-      def query_each_page(opts = {}, &block)
+      def start_query(opts = {}, &block)
         opts = @query.merge(table_name: name).merge!(opts)
         puts "Querying DDB: #{opts.inspect}"
-        ddb.query(opts).each_page(&block)
+        ddb.query(opts)
       end
 
       def dup_as(klass, opts = {})
@@ -153,11 +164,19 @@ module Rom
     # call BatchGetItem for keys from each page
     class GlobalIndexDataset < Dataset
       def each(&block)
-        query_each_page do |page|
-          @keys = page[:items].map { |h| hash_to_key(h) }
-          batch_get_each_item(@keys, &block)
+        if @query[:limit]
+          each_item(start_query, &block)
+        else
+          result = start_query(limit: 100)
+          result.each_page { |p| each_item(p, &block) }
         end
       end
+
+      private def each_item(result, &block)
+        keys = result[:items].map { |h| hash_to_key(h) }
+        batch_get_each_item(keys, &block)
+      end
     end
+
   end
 end
