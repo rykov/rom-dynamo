@@ -9,13 +9,13 @@ module Rom
     class Dataset
       include Enumerable
       include Dry::Equalizer(:name, :connection)
-      attr_reader :name, :connection
+      extend Dry::Initializer[undefined: false]
+      
+      option :connection
+      option :name, proc(&:to_s)
+      option :table_keys, optional: true, reader: false
+      option :conditions, default: proc { {} }, reader: false
       alias_method :ddb, :connection
-
-      def initialize(name, ddb, conditions = nil)
-        @name, @connection = name, ddb
-        @conditions = conditions || {}
-      end
 
       ############# READ #############
 
@@ -28,9 +28,7 @@ module Rom
 
       def restrict(query = nil)
         return self if query.nil?
-        conds = query_to_conditions(query)
-        conds = @conditions.merge(conds)
-        dup_as(Dataset, conditions: conds)
+        dup_as(Dataset, conditions: merged_conditions(query))
       end
 
       def batch_restrict(keys)
@@ -40,9 +38,7 @@ module Rom
       end
 
       def index_restrict(index, query)
-        conds = query_to_conditions(query)
-        conds = @conditions.merge(conds)
-        dup_as(GlobalIndexDataset, index: index, conditions: conds)
+        dup_as(GlobalIndexDataset, index: index, conditions: merged_conditions(query))
       end
 
       ############# WRITE #############
@@ -72,12 +68,24 @@ module Rom
       ############# HELPERS #############
     private
       def each_item(options, &block)
-        puts "Querying #{name} ...\nWith: #{options.inspect}"
-        connection.query(options.merge({
-          table_name: name
-        })).each_page do |page|
+        opts = options.merge(table_name: name)
+        puts "Querying DDB: #{opts.inspect}"
+        connection.query(opts).each_page do |page|
           page[:items].each(&block)
         end
+      end
+
+      def batch_get_each_item(keys, &block)
+        !keys.empty? && ddb.batch_get_item({
+          request_items: { name => { keys: keys } },
+        }).each_page do |page|
+          out = page[:responses][name]
+          out.each(&block)
+        end
+      end
+
+      def merged_conditions(query)
+        @conditions.merge(query_to_conditions(query))
       end
 
       def query_to_conditions(query)
@@ -110,11 +118,8 @@ module Rom
 
       def dup_as(klass, opts = {})
         table_keys # To populate keys once at top-level Dataset
-        vars = [:@name, :@connection, :@conditions, :@table_keys]
-        klass.allocate.tap do |out|
-          vars.each { |k| out.instance_variable_set(k, instance_variable_get(k)) }
-          opts.each { |k, v| out.instance_variable_set("@#{k}", v) }
-        end
+        attrs = Dataset.dry_initializer.attributes(self)
+        klass.new(attrs.merge(opts))
       end
 
       # String modifiers
@@ -131,35 +136,31 @@ module Rom
     # Batch get using an array of key queries
     # [{ key => val }, { key => val }, ...]
     class BatchGetDataset < Dataset
-      attr_accessor :keys
+      option :keys
 
       # Query for records
       def each(&block)
-        !@keys.empty? && ddb.batch_get_item({
-          request_items: { name => { keys: @keys } },
-        }).each_page do |page|
-          out = page[:responses][name]
-          out.each(&block)
-        end
+        batch_get_each_item(@keys, &block)
       end
     end
 
     # Dataset queried via a Global Index
-    class GlobalIndexDataset < BatchGetDataset
-      attr_accessor :index
+    class GlobalIndexDataset < Dataset
+      option :index
 
       # Paginate through key hashes from Global Index
       # And call BatchGetItem for keys from each page
       def each(&block)
         index_query.each_page do |page|
           @keys = page[:items].map { |h| hash_to_key(h) }
-          super(&block)
+          batch_get_each_item(@keys, &block)
         end
       end
 
       private def index_query
         opts = { key_conditions: @conditions, limit: 100 }
         opts.merge!(table_name: name, index_name: @index)
+        puts "Querying DDB: #{opts.inspect}"
         connection.query(opts)
       end
     end

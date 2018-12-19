@@ -24,7 +24,7 @@ module Rom
 
       def dataset(name)
         name = "#{@prefix}#{name}"
-        @datasets[name] ||= _has?(name) && Dataset.new(name, @ddb)
+        @datasets[name] ||= _has?(name) && Dataset.new(connection: @ddb, name: name)
       end
 
       def dataset?(name)
