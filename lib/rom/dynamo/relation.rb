@@ -10,25 +10,27 @@ module Rom
       include Enumerable
       include Dry::Equalizer(:name, :connection)
       extend Dry::Initializer[undefined: false]
-      
+      EmptyQuery = { key_conditions: {}.freeze }.freeze
+
       option :connection
       option :name, proc(&:to_s)
       option :table_keys, optional: true, reader: false
-      option :conditions, default: proc { {} }, reader: false
+      option :query, default: proc { EmptyQuery }, reader: false
       alias_method :ddb, :connection
 
       ############# READ #############
 
       def each(&block)
-        block.nil? ? to_enum : each_item({
-          key_conditions: @conditions,
-          consistent_read: true,
-        }, &block)
+        block.nil? ? to_enum : begin
+          query_each_page(consistent_read: true) do |page|
+            page[:items].each(&block)
+          end
+        end
       end
 
       def restrict(query = nil)
         return self if query.nil?
-        dup_as(Dataset, conditions: merged_conditions(query))
+        dup_with_query(Dataset, query)
       end
 
       def batch_restrict(keys)
@@ -38,7 +40,8 @@ module Rom
       end
 
       def index_restrict(index, query)
-        dup_as(GlobalIndexDataset, index: index, conditions: merged_conditions(query))
+        opts = { index_name: index.to_s, limit: @query[:limit] || 100 }
+        dup_with_query(GlobalIndexDataset, query, opts)
       end
 
       ############# WRITE #############
@@ -67,14 +70,6 @@ module Rom
 
       ############# HELPERS #############
     private
-      def each_item(options, &block)
-        opts = options.merge(table_name: name)
-        puts "Querying DDB: #{opts.inspect}"
-        connection.query(opts).each_page do |page|
-          page[:items].each(&block)
-        end
-      end
-
       def batch_get_each_item(keys, &block)
         !keys.empty? && ddb.batch_get_item({
           request_items: { name => { keys: keys } },
@@ -84,8 +79,11 @@ module Rom
         end
       end
 
-      def merged_conditions(query)
-        @conditions.merge(query_to_conditions(query))
+      def dup_with_query(klass, query, opts = {})
+        conditions = @query[:key_conditions]
+        conditions = conditions.merge(query_to_conditions(query)).freeze
+        opts = @query.merge(opts).merge!(key_conditions: conditions)
+        dup_as(klass, query: opts.freeze)
       end
 
       def query_to_conditions(query)
@@ -116,6 +114,12 @@ module Rom
         end
       end
 
+      def query_each_page(opts = {}, &block)
+        opts = @query.merge(table_name: name).merge!(opts)
+        puts "Querying DDB: #{opts.inspect}"
+        ddb.query(opts).each_page(&block)
+      end
+
       def dup_as(klass, opts = {})
         table_keys # To populate keys once at top-level Dataset
         attrs = Dataset.dry_initializer.attributes(self)
@@ -144,24 +148,15 @@ module Rom
       end
     end
 
-    # Dataset queried via a Global Index
+    # Dataset queried via a Global Secondary Index
+    # Paginate through keys from Global Index and
+    # call BatchGetItem for keys from each page
     class GlobalIndexDataset < Dataset
-      option :index
-
-      # Paginate through key hashes from Global Index
-      # And call BatchGetItem for keys from each page
       def each(&block)
-        index_query.each_page do |page|
+        query_each_page do |page|
           @keys = page[:items].map { |h| hash_to_key(h) }
           batch_get_each_item(@keys, &block)
         end
-      end
-
-      private def index_query
-        opts = { key_conditions: @conditions, limit: 100 }
-        opts.merge!(table_name: name, index_name: @index)
-        puts "Querying DDB: #{opts.inspect}"
-        connection.query(opts)
       end
     end
   end
