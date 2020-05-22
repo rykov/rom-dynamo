@@ -12,7 +12,7 @@ RSpec.configure do |config|
     ddb.delete_table(opts) if gwy.dataset('foo_bar')
     ddb.create_table(opts.merge(
       attribute_definitions: [
-        { attribute_name: "id",         attribute_type: "N" },
+        { attribute_name: "id", attribute_type: "N" },
       ],
       key_schema: [
         { attribute_name: "id", key_type: "HASH" }
