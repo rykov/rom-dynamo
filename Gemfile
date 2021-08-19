@@ -4,6 +4,7 @@ source 'https://rubygems.org'
 gemspec
 
 # For development/testing
+gem 'nokogiri'
 gem 'dotenv'
 gem 'rom'
 gem 'virtus'

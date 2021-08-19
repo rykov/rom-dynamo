@@ -1,0 +1,31 @@
+name: specs
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        ruby: [2.4, 2.5, 2.6, 2.7, 3.0, head, jruby]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Ruby & run Bundler
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby }}
+        bundler-cache: true
+    - name: Setup DynamoDB Local
+      uses: rrainn/dynamodb-action@v2.0.0
+      with:
+        port: 8000
+    - name: Run specs
+      run: bundle exec rake spec
+      env:
+        AWS_ACCESS_KEY_ID: DEADBEEF
+        AWS_SECRET_ACCESS_KEY: FORAWSSDK

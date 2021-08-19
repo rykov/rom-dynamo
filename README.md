@@ -4,6 +4,7 @@
 # Rom::Dynamo
 
 [![Gem Version](https://badge.fury.io/rb/rom-dynamo.svg)][gem]
+[![Build Status](https://github.com/rykov/rom-dynamo/actions/workflows/specs.yml/badge.svg)](https://github.com/rykov/rom-dynamo/actions/workflows/specs.yml)
 
 AWS DynamoDB support for [Ruby Object Mapper](https://github.com/rom-rb/rom).
 

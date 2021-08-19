@@ -23,6 +23,9 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
+  # Ruby 2.0 and above
+  spec.required_ruby_version = Gem::Requirement.new('>= 2.4.0')
+
   # Runtime
   spec.add_runtime_dependency "addressable", "~> 2.3"
   spec.add_runtime_dependency "rom", ">= 1.0", "< 6.0"

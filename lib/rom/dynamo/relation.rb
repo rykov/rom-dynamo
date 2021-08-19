@@ -140,7 +140,7 @@ module Rom
       def dup_as(klass, opts = {})
         table_keys # To populate keys once at top-level Dataset
         attrs = Dataset.dry_initializer.attributes(self)
-        klass.new(attrs.merge(opts))
+        klass.new(**attrs.merge(opts))
       end
 
       # String modifiers
