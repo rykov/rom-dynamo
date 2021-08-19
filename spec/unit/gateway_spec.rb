@@ -25,27 +25,27 @@ describe ROM::Dynamo::Gateway do
   end # describe #options
 
   describe "#[]" do
-    subject { gateway["foo_bar"] }
+    subject { gateway["items"] }
 
     context "by default" do
       it { is_expected.to be_nil }
     end
 
     context "registered dataset" do
-      before { gateway.dataset "foo_bar" }
+      before { gateway.dataset "items" }
       it { is_expected.to be_instance_of ROM::Dynamo::Dataset }
     end
   end # describe #[]
 
   describe "#dataset?" do
-    subject { gateway.dataset? "foo_bar" }
+    subject { gateway.dataset? "items" }
 
     context "by default" do
       it { is_expected.to eql false }
     end
 
     context "registered dataset" do
-      before { gateway.dataset "foo_bar" }
+      before { gateway.dataset "items" }
       it { is_expected.to eql true }
     end
   end # describe #dataset?
@@ -54,20 +54,20 @@ describe ROM::Dynamo::Gateway do
     subject { gateway.dataset(name) }
 
     context "with valid name" do
-      let(:name) { :"foo_bar" }
+      let(:name) { :"items" }
 
       it "registers the dataset for given table" do
         subject
-        dataset = gateway["foo_bar"]
-        expect(dataset.name).to eq('test_app_foo_bar')
+        dataset = gateway["items"]
+        expect(dataset.name).to eq('test_app_items')
       end
     end
 
     context "with a string name" do
-      let(:name) { "foo_bar" }
+      let(:name) { "items" }
 
       it "registers the dataset for given table" do
-        expect { subject }.to change { gateway[:"foo_bar"] }
+        expect { subject }.to change { gateway[:"items"] }
       end
     end
   end # describe #dataset

@@ -30,6 +30,6 @@ Gem::Specification.new do |spec|
 
   # Development
   spec.add_development_dependency "activesupport", ">= 4.0", "< 7.0"
-  spec.add_development_dependency "bundler", "~> 1.7"
+  spec.add_development_dependency "bundler", ">= 1.7"
   spec.add_development_dependency "rake", "~> 13.0"
 end

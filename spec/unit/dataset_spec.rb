@@ -3,7 +3,7 @@
 describe ROM::Dynamo::Dataset do
   let(:uri) { LocalDynamoURI }
   let(:ddb) { ROM::Dynamo::Gateway.new(uri).ddb }
-  let(:table_name) { "foo_bar" }
+  let(:table_name) { "items" }
 
   describe 'initializer' do
     it 'should instantiate a Dataset' do

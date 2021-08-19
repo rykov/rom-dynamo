@@ -3,7 +3,7 @@ module Rom
     class Relation < ROM::Relation
       include Enumerable
       forward :restrict, :batch_restrict, :index_restrict
-      forward :limit, :reversed
+      forward :limit, :reversed, :offset
       adapter :dynamo
     end
 
@@ -46,7 +46,13 @@ module Rom
       ############# PAGINATION #############
 
       def limit(limit)
-        dup_with_query(self.class, nil, limit: limit.to_i)
+        opts = limit.nil? ? {} : { limit: limit.to_i }
+        dup_with_query(self.class, nil, opts)
+      end
+
+      def offset(key)
+        opts = key.nil? ? {} : { exclusive_start_key: key }
+        dup_with_query(self.class, nil, opts)
       end
 
       def reversed
