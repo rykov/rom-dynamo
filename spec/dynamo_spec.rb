@@ -25,6 +25,10 @@ describe ROM::Dynamo do
     def by_parent_index(p)
       items.index_restrict('parent-index', parent: p)
     end
+
+    def multi_id(keys)
+      items.batch_restrict(keys)
+    end
   end
 
   describe '#create' do
@@ -47,6 +51,11 @@ describe ROM::Dynamo do
       items_repo.create({ id: 3, parent: 'b', name: 'Jim' })
     end
 
+    it 'should retrieve items by batch' do
+      results = items_repo.multi_id([2,3]).to_a
+      expect(results.map(&:id)).to match_array([2, 3])
+    end
+
     it 'should retrieve items by index' do
       results = items_repo.by_parent_index('a').to_a
       expect(results.map(&:id)).to match_array([1, 2])
@@ -63,5 +72,20 @@ describe ROM::Dynamo do
       expect(results.map(&:id)).to match_array([2])
     end
 
+    it 'should retrieve using pagination' do
+      parent_query = items_repo.by_parent_index('a').limit(1)
+
+      page = parent_query.each_page.next
+      expect(page.items.map { |i| i['id'] }).to match_array([1])
+      expect(offset = page.last_evaluated_key).to_not be_nil
+
+      page = parent_query.offset(offset).each_page.next
+      expect(page.items.map { |i| i['id'] }).to match_array([2])
+      expect(offset = page.last_evaluated_key).to_not be_nil
+
+      page = parent_query.offset(offset).each_page.next
+      expect(page.items.map { |i| i['id'] }).to match_array([])
+      expect(page.last_evaluated_key).to be_nil
+    end
   end
 end

@@ -1,5 +1,5 @@
 module Rom
   module Dynamo
-    VERSION = "0.15.0"
+    VERSION = "0.16.0.beta.1"
   end
 end
