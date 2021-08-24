@@ -76,15 +76,15 @@ describe ROM::Dynamo do
       parent_query = items_repo.by_parent_index('a').limit(1)
 
       page = parent_query.each_page.next
-      expect(page.items.map { |i| i['id'] }).to match_array([1])
+      expect(page.items.map(&:id)).to match_array([1])
       expect(offset = page.last_evaluated_key).to_not be_nil
 
       page = parent_query.offset(offset).each_page.next
-      expect(page.items.map { |i| i['id'] }).to match_array([2])
+      expect(page.items.map(&:id)).to match_array([2])
       expect(offset = page.last_evaluated_key).to_not be_nil
 
       page = parent_query.offset(offset).each_page.next
-      expect(page.items.map { |i| i['id'] }).to match_array([])
+      expect(page.items.map(&:id)).to match_array([])
       expect(page.last_evaluated_key).to be_nil
     end
   end
