@@ -1,4 +1,4 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 RSpec.configure do |config|
 
@@ -7,7 +7,7 @@ RSpec.configure do |config|
   # Populates table records [{id: 1, name: "joe"}, {id: 2, name: "jane"}]
   #
   def reset_cluster
-    gwy = Rom::Dynamo::Gateway.new(LocalDynamoURI)
+    gwy = Rom::Dynamo::Gateway.new(LOCAL_DYNAMO_URI)
     ddb, opts = gwy.ddb, { table_name: "test_app_items" }
     ddb.delete_table(opts) if gwy.dataset('items')
     ddb.create_table(opts.merge(

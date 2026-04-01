@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'rom/commands'
 
 module Rom
@@ -6,7 +8,7 @@ module Rom
       # DynamoDB create command
       class Create < ROM::Commands::Create
         def execute(tuples)
-          Array([tuples]).flatten.map do |tuple|
+          [tuples].flatten.map do |tuple|
             attributes = input[tuple]
             dataset.insert(attributes.to_h)
           end

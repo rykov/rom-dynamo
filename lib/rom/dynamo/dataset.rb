@@ -1,17 +1,19 @@
+# frozen_string_literal: true
+
 module Rom
   module Dynamo
     class Dataset
       include Enumerable
       include Dry::Equalizer(:name, :connection)
       extend Dry::Initializer[undefined: false]
-      EmptyQuery = { key_conditions: {}.freeze }.freeze
+      EMPTY_QUERY = { key_conditions: {}.freeze }.freeze
 
       option :connection
       option :name, proc(&:to_s)
       option :logger, optional: true
       option :table_keys, optional: true, reader: false
-      option :query, default: proc { EmptyQuery }, reader: false
-      alias_method :ddb, :connection
+      option :query, default: proc { EMPTY_QUERY }, reader: false
+      alias ddb connection
 
       ######### ENUMERATE ###########
 
@@ -35,7 +37,7 @@ module Rom
 
       def batch_restrict(keys)
         dup_as(BatchGetDataset, keys: keys.map do |k|
-          Hash[table_keys.zip(k.is_a?(Array) ? k : [k])]
+          table_keys.zip(k.is_a?(Array) ? k : [k]).to_h
         end)
       end
 
@@ -98,28 +100,28 @@ module Rom
 
         if key_hash && !key_hash.empty?
           conditions = @query[:key_conditions]
-          opts[:key_conditions] = conditions.merge(Hash[
+          opts[:key_conditions] = conditions.merge(
             key_hash.map do |key, value|
               [key, {
                 attribute_value_list: [value],
-                comparison_operator:  "EQ"
+                comparison_operator: "EQ"
               }]
-            end
-          ]).freeze
+            end.to_h
+          ).freeze
         end
 
         dup_as(klass, query: opts.freeze)
       end
 
       def to_expected(hash)
-        hash && Hash[hash.map do |k, v|
+        hash && hash.map do |k, v|
           [k, { value: v }]
-        end]
+        end.to_h
       end
 
       def hash_to_key(hash)
         table_keys.each_with_object({}) do |k, out|
-          out[k] = hash[k] if hash.has_key?(k)
+          out[k] = hash[k] if hash.key?(k)
         end
       end
 
@@ -130,7 +132,7 @@ module Rom
         end
       end
 
-      def start_query(opts = {}, &block)
+      def start_query(opts = {})
         opts = @query.merge(table_name: name).merge!(opts)
         logger&.debug("Querying DDB: #{opts.inspect}")
         ddb.query(opts)
@@ -139,7 +141,7 @@ module Rom
       def dup_as(klass, opts = {})
         table_keys # To populate keys once at top-level Dataset
         attrs = Dataset.dry_initializer.attributes(self)
-        klass.new(**attrs.merge(opts))
+        klass.new(**attrs, **opts)
       end
 
       # String modifiers
@@ -183,7 +185,7 @@ module Rom
         end
       end
 
-      private def populated_results(result, &block)
+      private def populated_results(result)
         klass = Aws::DynamoDB::Types::QueryOutput
         keys = result.items.map { |h| hash_to_key(h) }
         klass.new(result.to_hash.merge(items: [].tap do |out|

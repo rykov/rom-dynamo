@@ -1,7 +1,7 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 module LocalDynamoDB
-  JAVA_DIR = File.expand_path('../../java', __FILE__)
+  JAVA_DIR = File.expand_path('../java', __dir__)
   LIB_DIR = File.join(JAVA_DIR, 'target/lib')
   PORT = 8000
 
@@ -45,7 +45,7 @@ module LocalDynamoDB
       @pid = nil
     end
 
-    private
+  private
 
     def wait_until_ready(timeout: 10)
       deadline = Time.now + timeout

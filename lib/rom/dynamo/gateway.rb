@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'addressable/uri'
 require 'rom/gateway'
 
@@ -7,8 +9,9 @@ module Rom
       attr_reader :ddb, :options, :logger
 
       def initialize(uri)
+        super()
         uri = Addressable::URI.parse(uri)
-        opts =  { region: uri.host }
+        opts = { region: uri.host }
         opts.merge!(uri.query_values) if uri.query
         opts.keys.each { |k| opts[k.to_sym] = opts.delete(k) }
 

@@ -1,0 +1,107 @@
+---
+plugins:
+  - rubocop-rake
+  - rubocop-rspec
+
+AllCops:
+  TargetRubyVersion: 2.4
+  NewCops: enable
+  Exclude:
+    - '.git/**/*'
+
+# Adjustments
+Gemspec/DevelopmentDependencies:
+  AllowedGems: ["rake", "bundler"]
+Layout/AccessModifierIndentation:
+  EnforcedStyle: outdent
+Layout/EndAlignment:
+  EnforcedStyleAlignWith: start_of_line
+Naming/FileName:
+  Exclude: ['lib/rom-dynamo.rb']
+Style/HashSyntax:
+  EnforcedShorthandSyntax: never
+  Exclude: ['Rakefile']
+Style/PercentLiteralDelimiters:
+  PreferredDelimiters: {"default":"()", "%i":"()", "%I":"()", "%r":"{}", "%w":"()", "%W":"()"}
+
+# TODO
+Style/Documentation:
+  Enabled: false
+Style/StringLiterals:
+  Enabled: false
+
+# Disabled
+Bundler/OrderedGems:
+  Enabled: false
+Gemspec/OrderedDependencies:
+  Enabled: false
+Layout/BlockEndNewline:
+  Enabled: false
+Layout/EmptyLineAfterGuardClause:
+  Enabled: false
+Layout/EmptyLineBetweenDefs:
+  Enabled: false
+Layout/EmptyLinesAfterModuleInclusion:
+  Enabled: false
+Layout/EmptyLinesAroundAccessModifier:
+  Enabled: false
+Layout/EmptyLinesAroundArguments:
+  Enabled: false
+Layout/EmptyLinesAroundAttributeAccessor:
+  Enabled: false
+Layout/EmptyLinesAroundBeginBody:
+  Enabled: false
+Layout/EmptyLinesAroundBlockBody:
+  Enabled: false
+Layout/EmptyLinesAroundClassBody:
+  Enabled: false
+Layout/EmptyLinesAroundExceptionHandlingKeywords:
+  Enabled: false
+Layout/FirstArgumentIndentation:
+  Enabled: false
+Layout/FirstHashElementIndentation:
+  Enabled: false
+Layout/MultilineBlockLayout:
+  Enabled: false
+Lint/ConstantDefinitionInBlock:
+  Enabled: false
+Lint/ScriptPermission:
+  Enabled: false
+Metrics/AbcSize:
+  Enabled: false
+Metrics/ClassLength:
+  Enabled: false
+Metrics/MethodLength:
+  Enabled: false
+Naming/MethodParameterName:
+  Enabled: false
+RSpec/ContextWording:
+  Enabled: false
+RSpec/EmptyLineAfterHook:
+  Enabled: false
+RSpec/ExampleLength:
+  Enabled: false
+RSpec/LeakyConstantDeclaration:
+  Enabled: false
+RSpec/MultipleExpectations:
+  Enabled: false
+Style/AccessModifierDeclarations:
+  Enabled: false
+Style/BlockDelimiters:
+  Enabled: false
+Style/ClassAndModuleChildren:
+  Enabled: false
+Style/CommentedKeyword:
+  Enabled: false
+Style/NegatedIf:
+  Enabled: false
+Style/ParallelAssignment:
+  Enabled: false
+Style/RedundantReturn:
+  Enabled: false
+Style/TrailingCommaInArrayLiteral:
+  Enabled: false
+Style/TrailingCommaInHashLiteral:
+  Enabled: false
+Style/TrailingCommaInArguments:
+  Enabled: false

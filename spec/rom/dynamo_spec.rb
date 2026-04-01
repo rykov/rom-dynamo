@@ -1,7 +1,7 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 describe ROM::Dynamo do
-  let(:uri) { LocalDynamoURI }
+  let(:uri) { LOCAL_DYNAMO_URI }
   let(:table_name) { "items" }
   let(:rom) { ROM.container(:dynamo, uri) { |config|
 
@@ -34,7 +34,7 @@ describe ROM::Dynamo do
   describe '#create' do
     let(:items_repo) { ItemsRepo.new(rom) }
 
-    it 'should create and retrieve item' do
+    it 'creates and retrieve item' do
       items_repo.create({ id: 1, name: 'Jeff' })
       item = items_repo.by_id(1)
       expect(item.id).to eq(1)
@@ -51,40 +51,40 @@ describe ROM::Dynamo do
       items_repo.create({ id: 3, parent: 'b', name: 'Jim' })
     end
 
-    it 'should retrieve items by batch' do
-      results = items_repo.multi_id([2,3]).to_a
-      expect(results.map(&:id)).to match_array([2, 3])
+    it 'retrieves items by batch' do
+      results = items_repo.multi_id([2, 3]).to_a
+      expect(results.map(&:id)).to contain_exactly(2, 3)
     end
 
-    it 'should retrieve items by index' do
+    it 'retrieves items by index' do
       results = items_repo.by_parent_index('a').to_a
-      expect(results.map(&:id)).to match_array([1, 2])
+      expect(results.map(&:id)).to contain_exactly(1, 2)
     end
 
-    it 'should retrieve item with limit' do
+    it 'retrieves item with limit' do
       results = items_repo.by_parent_index('a').limit(1)
-      expect(results.map(&:id)).to match_array([1])
+      expect(results.map(&:id)).to contain_exactly(1)
     end
 
-    it 'should retrieve item with offset' do
+    it 'retrieves item with offset' do
       offset = { parent: 'a', id: 1 }
       results = items_repo.by_parent_index('a').offset(offset)
-      expect(results.map(&:id)).to match_array([2])
+      expect(results.map(&:id)).to contain_exactly(2)
     end
 
-    it 'should retrieve using pagination' do
+    it 'retrieves using pagination' do
       parent_query = items_repo.by_parent_index('a').limit(1)
 
       page = parent_query.each_page.next
-      expect(page.items.map(&:id)).to match_array([1])
-      expect(offset = page.last_evaluated_key).to_not be_nil
+      expect(page.items.map(&:id)).to contain_exactly(1)
+      expect(offset = page.last_evaluated_key).not_to be_nil
 
       page = parent_query.offset(offset).each_page.next
-      expect(page.items.map(&:id)).to match_array([2])
-      expect(offset = page.last_evaluated_key).to_not be_nil
+      expect(page.items.map(&:id)).to contain_exactly(2)
+      expect(offset = page.last_evaluated_key).not_to be_nil
 
       page = parent_query.offset(offset).each_page.next
-      expect(page.items.map(&:id)).to match_array([])
+      expect(page.items.map(&:id)).to eq([])
       expect(page.last_evaluated_key).to be_nil
     end
   end

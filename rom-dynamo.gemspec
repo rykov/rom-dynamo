@@ -1,5 +1,6 @@
-# coding: utf-8
-lib = File.expand_path('../lib', __FILE__)
+# frozen_string_literal: true
+
+lib = File.expand_path('lib', __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'rom/dynamo/version'
 
@@ -9,12 +10,8 @@ Gem::Specification.new do |spec|
   spec.authors       = ["Michael Rykov"]
   spec.email         = ["mrykov@gmail.com"]
 
-  #if spec.respond_to?(:metadata)
-  #  spec.metadata['allowed_push_host'] = "https://push.fury.io"
-  #end
-
-  spec.summary       = %q{DynamoDB adapter for Ruby Object Mapper}
-  spec.description   = %q{DynamoDB adapter for Ruby Object Mapper}
+  spec.summary       = 'DynamoDB adapter for Ruby Object Mapper'
+  spec.description   = 'DynamoDB adapter for Ruby Object Mapper'
   spec.homepage      = "https://github.com/rykov/rom-dynamo"
   spec.license       = "MIT"
 
@@ -25,14 +22,14 @@ Gem::Specification.new do |spec|
 
   # Ruby 2.0 and above
   spec.required_ruby_version = Gem::Requirement.new('>= 2.4.0')
+  spec.metadata['rubygems_mfa_required'] = 'true'
 
   # Runtime
-  spec.add_runtime_dependency "addressable", "~> 2.3"
-  spec.add_runtime_dependency "rom", ">= 1.0", "< 6.0"
-  spec.add_runtime_dependency "aws-sdk-dynamodb", "~> 1.0"
+  spec.add_dependency "addressable", "~> 2.3"
+  spec.add_dependency "rom", ">= 1.0", "< 6.0"
+  spec.add_dependency "aws-sdk-dynamodb", "~> 1.0"
 
   # Development
-  spec.add_development_dependency "activesupport", ">= 4.0", "< 9.0"
-  spec.add_development_dependency "bundler", ">= 1.7"
+  spec.add_development_dependency "bundler", ">= 2.0"
   spec.add_development_dependency "rake", "~> 13.0"
 end

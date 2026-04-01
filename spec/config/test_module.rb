@@ -1,7 +1,6 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 # Recreates ROM::Dynamo::Test before every spec
 RSpec.configure do |config|
-  config.before { module ROM::Dynamo::Test; end }
-  config.after  { ROM::Dynamo.send :remove_const, :Test }
+  config.before { stub_const("ROM::Dynamo::Test", Module.new) }
 end

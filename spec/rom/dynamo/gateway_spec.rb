@@ -1,23 +1,23 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 describe ROM::Dynamo::Gateway do
 
   let(:gateway) { described_class.new(uri) }
-  let(:uri)     { LocalDynamoURI }
+  let(:uri)     { LOCAL_DYNAMO_URI }
 
   describe ".new" do
     it "creates the gateway with uri" do
-      c = described_class.new(LocalDynamoURI).ddb.config
+      c = described_class.new(LOCAL_DYNAMO_URI).ddb.config
       expect(c.endpoint).to eq(URI.parse('http://localhost:8000/'))
       expect(c.region).to eq('us-east-1')
     end
   end # describe .new
 
   describe "#options" do
-    subject { gateway.options }
+    subject(:options) { gateway.options }
 
     it "returns a uri" do
-      expect(subject).to eql({
+      expect(options).to eql({
         endpoint: 'http://localhost:8000/',
         region: 'us-east-1'
       })
@@ -25,7 +25,7 @@ describe ROM::Dynamo::Gateway do
   end # describe #options
 
   describe "#[]" do
-    subject { gateway["items"] }
+    subject(:lookup) { gateway["items"] }
 
     context "by default" do
       it { is_expected.to be_nil }
@@ -38,26 +38,26 @@ describe ROM::Dynamo::Gateway do
   end # describe #[]
 
   describe "#dataset?" do
-    subject { gateway.dataset? "items" }
+    subject(:dataset_exists) { gateway.dataset? "items" }
 
     context "by default" do
-      it { is_expected.to eql false }
+      it { is_expected.to be false }
     end
 
     context "registered dataset" do
       before { gateway.dataset "items" }
-      it { is_expected.to eql true }
+      it { is_expected.to be true }
     end
   end # describe #dataset?
 
   describe "#dataset" do
-    subject { gateway.dataset(name) }
+    subject(:register_dataset) { gateway.dataset(name) }
 
     context "with valid name" do
-      let(:name) { :"items" }
+      let(:name) { :items }
 
       it "registers the dataset for given table" do
-        subject
+        register_dataset
         dataset = gateway["items"]
         expect(dataset.name).to eq('test_app_items')
       end
@@ -67,7 +67,7 @@ describe ROM::Dynamo::Gateway do
       let(:name) { "items" }
 
       it "registers the dataset for given table" do
-        expect { subject }.to change { gateway[:"items"] }
+        expect { register_dataset }.to(change { gateway[:items] })
       end
     end
   end # describe #dataset
