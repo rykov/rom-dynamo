@@ -10,6 +10,7 @@ LocalDynamoURI = "dynamo://us-east-1/test_app_/?endpoint=#{ep}"
 require 'rom-dynamo'
 
 # Configures RSpec
+require 'config/local_dynamodb'
 require 'config/reset_cluster'
 require 'config/rom'
 require 'config/test_module'

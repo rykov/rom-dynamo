@@ -6,5 +6,6 @@
 /coverage/
 /doc/
 /pkg/
+/spec/java/target/
 /spec/reports/
 /tmp/
