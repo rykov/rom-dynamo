@@ -1,73 +1,84 @@
 [gem]: https://rubygems.org/gems/rom-dynamo
-[aws]: https://github.com/aws/aws-sdk-core-ruby
+[actions]: https://github.com/rykov/rom-dynamo/actions/workflows/specs.yml
+[docs]: https://rubydoc.info/gems/rom-dynamo
 
-# Rom::Dynamo
+# rom-dynamo
 
 [![Gem Version](https://badge.fury.io/rb/rom-dynamo.svg)][gem]
-[![Build Status](https://github.com/rykov/rom-dynamo/actions/workflows/specs.yml/badge.svg)](https://github.com/rykov/rom-dynamo/actions/workflows/specs.yml)
+[![Build Status](https://github.com/rykov/rom-dynamo/actions/workflows/specs.yml/badge.svg)][actions]
 
-AWS DynamoDB support for [Ruby Object Mapper](https://github.com/rom-rb/rom).
+AWS DynamoDB adapter for [ROM](https://rom-rb.org/) (Ruby Object Mapper).
 
 ## Installation
-
-Add this line to your application's Gemfile:
 
 ```ruby
 gem 'rom-dynamo'
 ```
 
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
-
-    $ gem install rom-dynamo
-
 ## Usage
 
-ROM-Dynamo uses [aws-sdk-core][aws] library, so you will need to initialize that first:
+ROM-Dynamo uses the [aws-sdk-dynamodb](https://github.com/aws/aws-sdk-ruby) library. Configure AWS credentials before connecting:
 
-    Aws.config.merge!({
-      credentials:   Aws::Credentials.new(AWS_ACCESS, AWS_SECRET),
-      region:        'us-east-1'
-    })
+```ruby
+Aws.config.merge!(
+  credentials: Aws::Credentials.new(AWS_ACCESS, AWS_SECRET),
+  region: 'us-east-1'
+)
+```
 
-To connect, use the following URL to specify the AWS region and table name prefix.  In this case, accessing `photos` will map to the table `table-name-prefix-photos`:
+Connect using a URI that specifies the AWS region and an optional table name prefix:
 
-    dynamo://region/table-name-prefix-/
+    dynamo://REGION/TABLE_PREFIX/
 
-So a sample setup will be:
+For example, with the URI below, accessing `photos` maps to the DynamoDB table `myapp_photos` in `us-east-1` region:
 
-    rom = ROM.setup(:dynamo, 'dynamo://us-east-1/development_app_/') do
-      relation(:photos) do
-        # This will call GetItem API directly
-        def by_id(id)
-          restrict(id: id)
-        end
+    dynamo://us-east-1/myapp_/
 
-        # This will first query a Global Secondary Index
-        def all_for_user(id)
-          index_restrict('user-to-id', user_id: id)
-        end
-      end
+### Relations
 
-      commands(:photos) do
-        define(:create) { result(:one) }
-        define(:delete) { result(:one) }
-      end
+```ruby
+rom = ROM.container(:dynamo, 'dynamo://us-east-1/myapp_/') do |config|
+  config.relation(:photos) do
+    schema(infer: true)
+
+    def by_id(id)
+      restrict(id: id)
     end
 
-## Development
+    def all_for_user(user_id)
+      index_restrict('user-to-id', user_id: user_id)
+    end
+  end
+end
+```
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `bin/console` for an interactive prompt that will allow you to experiment.
+### Repository
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release` to create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+```ruby
+class PhotosRepo < ROM::Repository[:photos]
+  commands :create, update: :by_id, delete: :by_id
 
-## Contributing
+  def by_id(id)
+    photos.restrict(id: id).one
+  end
+end
 
-1. Fork it ( https://github.com/rykov/rom-dynamo/fork )
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create a new Pull Request
+repo = PhotosRepo.new(rom)
+repo.create({ id: 1, user_id: 42, url: 'https://example.com/photo.jpg' })
+repo.by_id(1)
+```
+
+## Compatibility
+
+- Ruby >= 2.4 (MRI and JRuby)
+- ROM >= 5.0, < 6.0
+- aws-sdk-dynamodb ~> 1.0
+
+## Links
+
+- [API Documentation][docs]
+- [ROM Learn](https://rom-rb.org/learn/)
+
+## License
+
+MIT
