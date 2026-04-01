@@ -8,6 +8,7 @@ module Rom
 
       option :connection
       option :name, proc(&:to_s)
+      option :logger, optional: true
       option :table_keys, optional: true, reader: false
       option :query, default: proc { EmptyQuery }, reader: false
       alias_method :ddb, :connection
@@ -131,7 +132,7 @@ module Rom
 
       def start_query(opts = {}, &block)
         opts = @query.merge(table_name: name).merge!(opts)
-        puts "Querying DDB: #{opts.inspect}"
+        logger&.debug("Querying DDB: #{opts.inspect}")
         ddb.query(opts)
       end
 

@@ -32,7 +32,7 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency "aws-sdk-dynamodb", "~> 1.0"
 
   # Development
-  spec.add_development_dependency "activesupport", ">= 4.0", "< 7.0"
+  spec.add_development_dependency "activesupport", ">= 4.0", "< 9.0"
   spec.add_development_dependency "bundler", ">= 1.7"
   spec.add_development_dependency "rake", "~> 13.0"
 end

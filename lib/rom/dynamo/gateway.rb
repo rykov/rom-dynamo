@@ -4,7 +4,7 @@ require 'rom/gateway'
 module Rom
   module Dynamo
     class Gateway < ROM::Gateway
-      attr_reader :ddb, :options
+      attr_reader :ddb, :options, :logger
 
       def initialize(uri)
         uri = Addressable::URI.parse(uri)
@@ -24,7 +24,7 @@ module Rom
 
       def dataset(name)
         name = "#{@prefix}#{name}"
-        @datasets[name] ||= _has?(name) && Dataset.new(connection: @ddb, name: name)
+        @datasets[name] ||= _has?(name) && Dataset.new(connection: @ddb, name: name, logger: @logger)
       end
 
       def dataset?(name)
