@@ -72,16 +72,18 @@ module Rom
         connection.delete_item({
           table_name: name,
           key: hash_to_key(hash),
-          expected: to_expected(hash),
+          **expression(:condition_expression, hash),
         }).attributes
       end
 
       def update(keys, hash)
+        updates = stringify_keys(hash).each_with_object({}) do |(k, v), out|
+          out[k] = dump_value(v) unless table_keys.include?(k)
+        end
+
         connection.update_item({
           table_name: name, key: hash_to_key(stringify_keys(keys)),
-          attribute_updates: hash.each_with_object({}) do |(k, v), out|
-            out[k] = { value: dump_value(v), action: 'PUT' } if !keys[k]
-          end
+          **expression(:update_expression, updates, ', ', 'SET '),
         }).attributes
       end
 
@@ -99,24 +101,29 @@ module Rom
         opts = @query.merge(opts)
 
         if key_hash && !key_hash.empty?
-          conditions = @query[:key_conditions]
-          opts[:key_conditions] = conditions.merge(
-            key_hash.map do |key, value|
-              [key, {
-                attribute_value_list: [value],
-                comparison_operator: "EQ"
-              }]
-            end.to_h
-          ).freeze
+          opts[:key_conditions] = @query[:key_conditions].merge(stringify_keys(key_hash)).freeze
         end
 
         dup_as(klass, query: opts.freeze)
       end
 
-      def to_expected(hash)
-        hash && hash.map do |k, v|
-          [k, { value: v }]
-        end.to_h
+      # Expression params with a "#name = :value" clause per attribute, e.g.
+      # { condition_expression: "#n0 = :v0 AND #n1 = :v1", ... }
+      def expression(param, hash, joiner = ' AND ', lead = '')
+        return {} if hash.empty?
+        names, values = {}, {}
+
+        clauses = hash.each_with_index.map do |(k, v), i|
+          names["#n#{i}"] = k
+          values[":v#{i}"] = v
+          "#n#{i} = :v#{i}"
+        end
+
+        {
+          param => "#{lead}#{clauses.join(joiner)}",
+          expression_attribute_names: names,
+          expression_attribute_values: values,
+        }
       end
 
       def hash_to_key(hash)
@@ -134,6 +141,7 @@ module Rom
 
       def start_query(opts = {})
         opts = @query.merge(table_name: name).merge!(opts)
+        opts.merge!(expression(:key_condition_expression, opts.delete(:key_conditions)))
         logger&.debug("Querying DDB: #{opts.inspect}")
         ddb.query(opts)
       end

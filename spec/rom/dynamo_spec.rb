@@ -3,6 +3,7 @@
 describe ROM::Dynamo do
   let(:uri) { LOCAL_DYNAMO_URI }
   let(:table_name) { "items" }
+  let(:items_repo) { ItemsRepo.new(rom) }
   let(:rom) { ROM.container(:dynamo, uri) { |config|
 
     config.relation(:items) do
@@ -32,8 +33,6 @@ describe ROM::Dynamo do
   end
 
   describe '#create' do
-    let(:items_repo) { ItemsRepo.new(rom) }
-
     it 'creates and retrieve item' do
       items_repo.create({ id: 1, name: 'Jeff' })
       item = items_repo.by_id(1)
@@ -43,8 +42,6 @@ describe ROM::Dynamo do
   end
 
   describe '#query' do
-    let(:items_repo) { ItemsRepo.new(rom) }
-
     before do
       items_repo.create({ id: 1, parent: 'a', name: 'Jeff' })
       items_repo.create({ id: 2, parent: 'a', name: 'Bob' })
@@ -59,6 +56,16 @@ describe ROM::Dynamo do
     it 'retrieves items by index' do
       results = items_repo.by_parent_index('a').to_a
       expect(results.map(&:id)).to contain_exactly(1, 2)
+    end
+
+    it 'retrieves items by full index key' do
+      results = items_repo.by_parent_index('a').restrict(id: 2).to_a
+      expect(results.map(&:id)).to contain_exactly(2)
+    end
+
+    it 'overrides earlier restrictions on the same key' do
+      results = items_repo.items.restrict(id: 1).restrict('id' => 3).to_a
+      expect(results.map(&:id)).to contain_exactly(3)
     end
 
     it 'retrieves item with limit' do
@@ -86,6 +93,71 @@ describe ROM::Dynamo do
       page = parent_query.offset(offset).each_page.next
       expect(page.items.map(&:id)).to eq([])
       expect(page.last_evaluated_key).to be_nil
+    end
+  end
+
+  describe '#update' do
+    before { items_repo.create({ id: 10, parent: 'u', name: 'Jeff' }) }
+
+    it 'overwrites existing attributes and adds new ones' do
+      items_repo.update(10, name: 'Geoff', age: 5)
+      expect(items_repo.by_id(10)).to have_attributes(parent: 'u', name: 'Geoff', age: 5)
+    end
+
+    it 'accepts string keys' do
+      items_repo.update(10, 'name' => 'Geoff')
+      expect(items_repo.by_id(10).name).to eq('Geoff')
+    end
+
+    it 'ignores key attributes' do
+      items_repo.update(10, id: 10, name: 'Geoff')
+      expect(items_repo.by_id(10).name).to eq('Geoff')
+    end
+
+    it 'allows a payload of only key attributes' do
+      expect { items_repo.update(10, id: 10) }.not_to raise_error
+      expect(items_repo.by_id(10).name).to eq('Jeff')
+    end
+
+    it 'serializes time values' do
+      time = Time.utc(2020, 1, 2, 3, 4, 5)
+      items_repo.update(10, seen_at: time)
+      expect(items_repo.by_id(10).seen_at).to eq('2020-01-02T03:04:05.000000Z')
+    end
+
+    it 'does nothing for missing items' do
+      items_repo.update(11, name: 'Nobody')
+      expect(items_repo.by_id(11)).to be_nil
+    end
+  end
+
+  describe '#delete' do
+    let(:dataset) { rom.relations[:items].dataset }
+
+    before { items_repo.create({ id: 20, parent: 'd', name: 'Jeff' }) }
+
+    it 'deletes the item' do
+      items_repo.delete(20)
+      expect(items_repo.by_id(20)).to be_nil
+    end
+
+    it 'leaves other items alone' do
+      items_repo.create({ id: 21, parent: 'd', name: 'Bob' })
+      items_repo.delete(20)
+      expect(items_repo.by_id(21).name).to eq('Bob')
+    end
+
+    it 'does nothing for missing items' do
+      expect { items_repo.delete(22) }.not_to raise_error
+      expect(items_repo.by_id(20)).not_to be_nil
+    end
+
+    it 'refuses to delete an item that has changed' do
+      stale = { id: 20, parent: 'd', name: 'Bob' }
+      expect { dataset.delete(stale) }.to raise_error(
+        Aws::DynamoDB::Errors::ConditionalCheckFailedException
+      )
+      expect(items_repo.by_id(20)).not_to be_nil
     end
   end
 end
