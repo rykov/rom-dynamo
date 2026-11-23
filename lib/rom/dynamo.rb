@@ -2,6 +2,7 @@
 
 require 'rom'
 require 'date'
+require 'time'
 require 'aws-sdk-dynamodb'
 require 'rom/dynamo/version'
 require 'rom/dynamo/dataset'

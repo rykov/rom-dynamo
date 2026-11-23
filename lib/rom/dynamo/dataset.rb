@@ -37,7 +37,7 @@ module Rom
 
       def batch_restrict(keys)
         dup_as(BatchGetDataset, keys: keys.map do |k|
-          table_keys.zip(k.is_a?(Array) ? k : [k]).to_h
+          dump(table_keys.zip(k.is_a?(Array) ? k : [k]).to_h)
         end)
       end
 
@@ -53,7 +53,7 @@ module Rom
       end
 
       def offset(key)
-        opts = key.nil? ? {} : { exclusive_start_key: key }
+        opts = key.nil? ? {} : { exclusive_start_key: dump(key) }
         dup_with_query(self.class, nil, opts)
       end
 
@@ -63,12 +63,12 @@ module Rom
 
       ############# WRITE #############
       def insert(hash)
-        opts = { table_name: name, item: stringify_keys(hash) }
+        opts = { table_name: name, item: dump(hash) }
         connection.put_item(opts).attributes
       end
 
       def delete(hash)
-        hash = stringify_keys(hash)
+        hash = dump(hash)
         connection.delete_item({
           table_name: name,
           key: hash_to_key(hash),
@@ -77,12 +77,9 @@ module Rom
       end
 
       def update(keys, hash)
-        updates = stringify_keys(hash).each_with_object({}) do |(k, v), out|
-          out[k] = dump_value(v) unless table_keys.include?(k)
-        end
-
+        updates = dump(hash).reject { |k, _| table_keys.include?(k) }
         connection.update_item({
-          table_name: name, key: hash_to_key(stringify_keys(keys)),
+          table_name: name, key: hash_to_key(dump(keys)),
           **expression(:update_expression, updates, ', ', 'SET '),
         }).attributes
       end
@@ -98,12 +95,8 @@ module Rom
       end
 
       def dup_with_query(klass, key_hash, opts = {})
-        opts = @query.merge(opts)
-
-        if key_hash && !key_hash.empty?
-          opts[:key_conditions] = @query[:key_conditions].merge(stringify_keys(key_hash)).freeze
-        end
-
+        conditions = @query[:key_conditions].merge(dump(key_hash || {}))
+        opts = @query.merge(opts).merge!(key_conditions: conditions.freeze)
         dup_as(klass, query: opts.freeze)
       end
 
@@ -152,14 +145,14 @@ module Rom
         klass.new(**attrs, **opts)
       end
 
-      # String modifiers
-      def stringify_keys(hash)
-        hash.each_with_object({}) { |(k, v), out| out[k.to_s] = v }
+      # Stringifies keys and serializes values
+      def dump(hash)
+        hash.each_with_object({}) { |(k, v), out| out[k.to_s] = dump_value(v) }
       end
 
       def dump_value(v)
         return v.new_offset(0).iso8601(6) if v.is_a?(DateTime)
-        v.is_a?(Time) ? v.utc.iso8601(6) : v
+        v.is_a?(Time) ? v.getutc.iso8601(6) : v
       end
     end
 

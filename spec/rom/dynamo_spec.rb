@@ -2,8 +2,9 @@
 
 describe ROM::Dynamo do
   let(:uri) { LOCAL_DYNAMO_URI }
-  let(:table_name) { "items" }
   let(:items_repo) { ItemsRepo.new(rom) }
+  let(:time) { Time.utc(2020, 1, 2, 3, 4, 5) }
+  let(:iso_time) { '2020-01-02T03:04:05.000000Z' }
   let(:rom) { ROM.container(:dynamo, uri) { |config|
 
     config.relation(:items) do
@@ -39,6 +40,20 @@ describe ROM::Dynamo do
       expect(item.id).to eq(1)
       expect(item.name).to eq('Jeff')
     end
+
+    it 'serializes time values' do
+      items_repo.create({ id: 4, seen_at: time, born_at: time.to_datetime })
+      expect(items_repo.by_id(4)).to have_attributes(
+        seen_at: iso_time, born_at: '2020-01-02T03:04:05.000000+00:00'
+      )
+    end
+
+    it 'serializes local times as UTC without changing them' do
+      local = Time.new(2020, 1, 2, 5, 4, 5, '+02:00')
+      items_repo.create({ id: 4, seen_at: local })
+      expect(items_repo.by_id(4).seen_at).to eq(iso_time)
+      expect(local.utc_offset).to eq(7200)
+    end
   end
 
   describe '#query' do
@@ -68,6 +83,12 @@ describe ROM::Dynamo do
       expect(results.map(&:id)).to contain_exactly(3)
     end
 
+    it 'serializes time values in restrictions' do
+      items_repo.create({ id: 5, parent: time })
+      results = items_repo.by_parent_index(time).to_a
+      expect(results.map(&:id)).to contain_exactly(5)
+    end
+
     it 'retrieves item with limit' do
       results = items_repo.by_parent_index('a').limit(1)
       expect(results.map(&:id)).to contain_exactly(1)
@@ -77,6 +98,13 @@ describe ROM::Dynamo do
       offset = { parent: 'a', id: 1 }
       results = items_repo.by_parent_index('a').offset(offset)
       expect(results.map(&:id)).to contain_exactly(2)
+    end
+
+    it 'serializes time values in offsets' do
+      items_repo.create({ id: 5, parent: time })
+      items_repo.create({ id: 6, parent: time })
+      results = items_repo.by_parent_index(time).offset({ parent: time, id: 5 })
+      expect(results.map(&:id)).to contain_exactly(6)
     end
 
     it 'retrieves using pagination' do
@@ -120,9 +148,8 @@ describe ROM::Dynamo do
     end
 
     it 'serializes time values' do
-      time = Time.utc(2020, 1, 2, 3, 4, 5)
       items_repo.update(10, seen_at: time)
-      expect(items_repo.by_id(10).seen_at).to eq('2020-01-02T03:04:05.000000Z')
+      expect(items_repo.by_id(10).seen_at).to eq(iso_time)
     end
 
     it 'does nothing for missing items' do
@@ -132,8 +159,6 @@ describe ROM::Dynamo do
   end
 
   describe '#delete' do
-    let(:dataset) { rom.relations[:items].dataset }
-
     before { items_repo.create({ id: 20, parent: 'd', name: 'Jeff' }) }
 
     it 'deletes the item' do
@@ -152,9 +177,15 @@ describe ROM::Dynamo do
       expect(items_repo.by_id(20)).not_to be_nil
     end
 
+    it 'serializes time values in the condition' do
+      items_repo.update(20, seen_at: time)
+      items_repo.items.dataset.delete({ id: 20, seen_at: time })
+      expect(items_repo.by_id(20)).to be_nil
+    end
+
     it 'refuses to delete an item that has changed' do
       stale = { id: 20, parent: 'd', name: 'Bob' }
-      expect { dataset.delete(stale) }.to raise_error(
+      expect { items_repo.items.dataset.delete(stale) }.to raise_error(
         Aws::DynamoDB::Errors::ConditionalCheckFailedException
       )
       expect(items_repo.by_id(20)).not_to be_nil
