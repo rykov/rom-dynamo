@@ -22,6 +22,7 @@ Gem::Specification.new do |spec|
 
   # Ruby 2.0 and above
   spec.required_ruby_version = Gem::Requirement.new('>= 2.4.0')
+  spec.metadata['changelog_uri'] = "#{spec.homepage}/blob/master/CHANGELOG.md"
   spec.metadata['rubygems_mfa_required'] = 'true'
 
   # Runtime

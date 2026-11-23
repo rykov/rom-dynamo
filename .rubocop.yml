@@ -8,6 +8,7 @@ AllCops:
   NewCops: enable
   Exclude:
     - '.git/**/*'
+    - 'vendor/**/*'
 
 # Adjustments
 Gemspec/DevelopmentDependencies:

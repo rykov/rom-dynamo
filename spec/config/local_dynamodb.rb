@@ -20,20 +20,12 @@ module LocalDynamoDB
       false
     end
 
+    # Starts DynamoDB Local if installed, else waits for an external one:
+    # briefly, or longer in CI where the container may still be booting
     def start
       return if running?
-      return unless installed?
-
-      classpath = File.join(LIB_DIR, '*')
-      @pid = spawn(
-        'java', "-Djava.library.path=#{LIB_DIR}", '-cp', classpath,
-        'software.amazon.dynamodb.services.local.main.ServerRunner',
-        '-sharedDb', '-inMemory', '-port', PORT.to_s,
-        chdir: File.join(JAVA_DIR, 'target'), out: File::NULL, err: File::NULL
-      )
-      Process.detach(@pid)
-
-      wait_until_ready
+      spawn_server if installed?
+      wait_until_ready(timeout: installed? || ENV['CI'] ? 20 : 2)
     end
 
     def stop
@@ -47,10 +39,21 @@ module LocalDynamoDB
 
   private
 
-    def wait_until_ready(timeout: 10)
+    def spawn_server
+      classpath = File.join(LIB_DIR, '*')
+      @pid = spawn(
+        'java', "-Djava.library.path=#{LIB_DIR}", '-cp', classpath,
+        'software.amazon.dynamodb.services.local.main.ServerRunner',
+        '-sharedDb', '-inMemory', '-port', PORT.to_s,
+        chdir: File.join(JAVA_DIR, 'target'), out: File::NULL, err: File::NULL
+      )
+      Process.detach(@pid)
+    end
+
+    def wait_until_ready(timeout:)
       deadline = Time.now + timeout
       until running?
-        raise "DynamoDB Local failed to start within #{timeout}s" if Time.now > deadline
+        raise "DynamoDB Local is not reachable on port #{PORT} after #{timeout}s" if Time.now > deadline
         sleep 0.2
       end
     end
